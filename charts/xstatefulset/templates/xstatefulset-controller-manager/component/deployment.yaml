@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xstatefulset-controller-manager
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: xstatefulset-controller-manager
+    {{- include "xstatefulset.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.controllerManager.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: xstatefulset-controller-manager
+      {{- include "xstatefulset.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: xstatefulset-controller-manager
+        {{- include "xstatefulset.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: xstatefulset-controller-manager
+          image: "{{ .Values.controllerManager.image.repository }}:{{ .Values.controllerManager.image.tag }}"
+          args:
+            {{- toYaml .Values.controllerManager.image.args | nindent 12 }}
+            {{- if .Values.controllerManager.kubeAPIQPS }}
+            - --kube-api-qps={{ .Values.controllerManager.kubeAPIQPS }}
+            {{- end }}
+            {{- if .Values.controllerManager.kubeAPIBurst }}
+            - --kube-api-burst={{ .Values.controllerManager.kubeAPIBurst }}
+            {{- end }}
+            {{- if .Values.webhook.enabled }}
+            - --enable-webhook={{ .Values.webhook.enabled }}
+            - --webhook-port={{ .Values.webhook.port | default 8443 }}
+            - --webhook-cert-dir=/etc/tls
+            {{- end }}
+          imagePullPolicy: {{ .Values.controllerManager.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.controllerManager.resource | nindent 12 }}
+          ports:
+            - name: webhook
+              containerPort: {{ .Values.webhook.port | default 8443 }}
+              protocol: TCP
+            - name: health
+              containerPort: 9443
+              protocol: TCP
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          {{- if .Values.webhook.enabled }}
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /etc/tls
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+      {{- if .Values.webhook.enabled }}
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: {{ .Values.webhook.tls.certSecretName | default "xstatefulset-webhook-server-cert" }}
+            optional: true
+      {{- end }}
+      serviceAccountName: xstatefulset-controller-manager

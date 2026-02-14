@@ -1,0 +1,36 @@
+apiVersion: apps.x-k8s.io/v1
+kind: XStatefulSet
+metadata:
+  name: csi-attacher-s3
+  namespace: fs-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: csi-attacher-s3
+  serviceName: csi-attacher-s3
+  template:
+    metadata:
+      labels:
+        app: csi-attacher-s3
+    spec:
+      containers:
+        - args:
+            - --v=4
+            - --csi-address=$(ADDRESS)
+          env:
+            - name: ADDRESS
+              value: /var/lib/kubelet/plugins/ru.yandex.s3.csi/csi.sock
+          image: apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com/apecloud/csi-attacher:v3.4.0
+          imagePullPolicy: IfNotPresent
+          name: csi-attacher
+          volumeMounts:
+            - mountPath: /var/lib/kubelet/plugins/ru.yandex.s3.csi
+              name: socket-dir
+      tolerations:
+        - operator: Exists
+      volumes:
+        - hostPath:
+            path: /var/lib/kubelet/plugins/ru.yandex.s3.csi
+            type: DirectoryOrCreate
+          name: socket-dir

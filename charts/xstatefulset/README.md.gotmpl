@@ -1,0 +1,19 @@
+{{- if eq .Name "xstatefulset" -}}
+
+{{ template "chart.header" . }}
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+
+## Notes
+
+- Values marked as “usually set by CI” are automatically updated during the release process; manual changes are not required.
+- For detailed information about each component, refer to the corresponding architecture and user guide documents.
+- Always review the [values.yaml](https://github.com/xsts-sh/xstatefulset/blob/main/charts/xstatefulset/values.yaml) file in the repository for the latest defaults and available options.
+
+{{- end -}}

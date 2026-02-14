@@ -1,0 +1,57 @@
+controllerManager:
+  # replicas is the number of instances to run.
+  replicas: 1
+  image:
+    repository: ghcr.io/volcano-sh/xstatefulset-controller-manager
+    # node: edit by CI. No need to modify manually
+    tag: latest
+    pullPolicy: IfNotPresent
+    # set --enable-webhook false to disable webhook, default is true
+    args: [ "--v=2" ]
+  resource:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # kubeAPIQPS is the QPS (queries per second) to use while talking with kubernetes apiserver
+  # If 0 or not specified, uses default value (5)
+  kubeAPIQPS: 0
+  # kubeAPIBurst is the burst to use while talking with kubernetes apiserver
+  # If 0 or not specified, uses default value (10)
+  kubeAPIBurst: 0
+
+# Webhook configuration
+webhook:
+  # enabled controls whether the mutating webhook is enabled
+  enabled: true
+  # serviceName is the name of the webhook service
+  serviceName: xstatefulset-controller-manager-webhook
+  tls:
+    # -- Secret name for storing webhook certificates.
+    certSecretName: xstatefulset-webhook-server-cert
+  # port is the port the webhook server listens on (inside the pod)
+  port: 8443
+  # timeoutSeconds is the timeout for webhook operations
+  timeoutSeconds: 30
+  # failurePolicy defines how unrecognized errors from the admission endpoint are handled
+  # Allowed values are Ignore or Fail. Defaults to Fail.
+  failurePolicy: Fail
+  # namespaceSelector decides whether to run the webhook on an object based on whether the namespace matches the selector
+  namespaceSelector: {}
+  # objectSelector decides whether to run the webhook based on if the object has matching labels
+  objectSelector: {}
+
+global:
+  # -- Certificate Management Mode.<br/>
+  #  Three mutually exclusive options for managing TLS certificates:<br/>
+  #  - `auto`: Webhook servers generate self-signed certificates automatically.<br/>
+  #  - `cert-manager`: Use cert-manager to generate and manage certificates (requires cert-manager installation).<br/>
+  #  - `manual`: Provide your own certificates via caBundle.
+  certManagementMode: auto
+  webhook:
+    # -- CA bundle for webhook server certificates (base64-encoded).<br/>
+    # This is ONLY required when `certManagementMode` is set to "manual".<br/>
+    # You can generate it with: `cat /path/to/your/ca.crt | base64 | tr -d '\n'`<br/>
+    caBundle: ""
